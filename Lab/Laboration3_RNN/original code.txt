@@ -1,0 +1,44 @@
+class BahdanauAttention(layers.Layer):
+    def __init__(self, hidden_dim=256):
+        super().__init__()
+        self.supports_masking = True
+        # TODO: Add your code here that defines the required layers/weights
+        # define linear parameters
+        self.w = layers.Dense(units = hidden_dim, activation='linear')
+        self.u = layers.Dense(units = hidden_dim, activation='linear')
+        self.v = layers.Dense(1, activation='linear')
+
+    def call(self, decoder_hidden, encoder_output, mask=None):
+        # Replace the next line with your own code that computes the attention scores
+        #scores = tf.zeros_like(encoder_output[:, :, -1])
+
+         # Expand decoder hidden state for concatenation
+        #decoder_hidden = tf.expand_dims(decoder_hidden, 1)  # (batch_size, 1, hidden_dim)
+
+        # Calculate attention scores
+        #energy = tf.nn.tanh(self.w(decoder_hidden) + self.u(encoder_output))  # (batch_size, src_len, hidden_dim)
+        #scores = self.v(energy)  # (batch_size, src_len, 1)
+        #scores = tf.squeeze(scores, axis=-1)  # (batch_size, src_len)
+
+        fc_encoder_out = self.w(encoder_output) 
+        fc_decoder_out = self.u(decoder_hidden)
+        fc_decoder_out = tf.expand_dims(fc_decoder_out, axis=1) 
+        scores = self.v(tf.math.tanh(fc_encoder_out + fc_decoder_out))
+        scores = tf.squeeze(scores, axis=-1)  
+
+        # ... The rest of the code is as in UniformAttention — NO NEED TO MODIFY BELOW THIS LINE!
+
+        # Mask out the attention scores for the padding tokens. We set
+        # them to -inf. After the softmax, we will have 0.
+        if mask is not None:
+            masked_value = -float('inf') * tf.ones_like(scores)
+            scores = tf.where(mask, scores, masked_value)
+
+        # Convert scores into weights
+        alpha = tf.nn.softmax(scores, axis=1)
+
+        # The context is the alpha-weighted sum of the encoder outputs.
+        context = tf.linalg.matmul(tf.expand_dims(alpha, axis=1), encoder_output)
+        context = tf.squeeze(context, axis=1)
+
+        return alpha, context
